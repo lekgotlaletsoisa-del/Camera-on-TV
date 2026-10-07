@@ -1,192 +1,370 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:background="@drawable/settings_screen_background"
+    android:orientation="vertical"
+    android:paddingStart="48dp"
+    android:paddingTop="26dp"
+    android:paddingEnd="48dp"
+    android:paddingBottom="24dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginHorizontal="72dp"
-        android:layout_marginVertical="42dp"
-        android:background="@color/panel_background"
-        android:elevation="8dp"
-        android:orientation="vertical"
-        android:padding="36dp">
+        android:layout_height="68dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:contentDescription="@string/app_icon_description"
+            android:scaleType="centerCrop"
+            android:src="@drawable/camera_on_tv_icon" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/app_heading"
+                android:textColor="@color/text_primary"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/app_tagline"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
+        </LinearLayout>
 
         <TextView
+            android:id="@+id/dashboard_status"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/app_heading"
-            android:textColor="@color/text_primary"
-            android:textSize="32sp"
+            android:layout_height="36dp"
+            android:background="@drawable/status_ready_background"
+            android:gravity="center"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:text="@string/dashboard_ready"
+            android:textColor="@color/success_dark"
+            android:textSize="14sp"
             android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:layout_weight="1"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/settings_card_background"
+            android:elevation="4dp"
+            android:orientation="vertical"
+            android:padding="22dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/connection_card_eyebrow"
+                android:textAllCaps="true"
+                android:textColor="@color/primary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/connection_card_title"
+                android:textColor="@color/text_primary"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/permission_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:textColor="@color/warning"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/grant_permission_button"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/button_primary_background"
+                android:focusable="true"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:text="@string/grant_overlay_permission"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="@string/api_address_label"
+                android:textAllCaps="true"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/api_address"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="monospace"
+                android:focusable="false"
+                android:maxLines="1"
+                android:textColor="@color/primary_dark"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/service_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:text="@string/api_service_starting"
+                android:textColor="@color/success"
+                android:textSize="13sp" />
+
+            <Space
+                android:layout_width="1dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/api_quick_reference"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:background="@drawable/code_panel_background"
+                android:fontFamily="monospace"
+                android:paddingStart="14dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="10dp"
+                android:text="@string/api_usage_compact"
+                android:textColor="@color/code_text"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginStart="18dp"
+            android:layout_weight="1.08"
+            android:background="@drawable/settings_card_background"
+            android:elevation="4dp"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/preferences_card_eyebrow"
+                android:textAllCaps="true"
+                android:textColor="@color/primary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/preferences_card_title"
+                android:textColor="@color/text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/sound_mode_label"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:maxLines="2"
+                android:text="@string/sound_mode_description_short"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <RadioGroup
+                android:id="@+id/sound_mode_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/sound_mode_follow_api"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:background="@drawable/setting_choice_background"
+                    android:buttonTint="@color/choice_control_tint"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:text="@string/sound_mode_follow_api"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp">
+
+                    <requestFocus />
+                </RadioButton>
+
+                <RadioButton
+                    android:id="@+id/sound_mode_always_on"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:background="@drawable/setting_choice_background"
+                    android:buttonTint="@color/choice_control_tint"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:text="@string/sound_mode_always_on"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+
+                <RadioButton
+                    android:id="@+id/sound_mode_always_off"
+                    android:layout_width="match_parent"
+                    android:layout_height="34dp"
+                    android:background="@drawable/setting_choice_background"
+                    android:buttonTint="@color/choice_control_tint"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
+                    android:text="@string/sound_mode_always_off"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+            </RadioGroup>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="6dp"
+                android:background="@color/divider" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/decoder_setting_label"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:text="@string/decoder_setting_description_short"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <CheckBox
+                android:id="@+id/compatibility_decoder"
+                android:layout_width="match_parent"
+                android:layout_height="38dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/setting_choice_background"
+                android:buttonTint="@color/choice_control_tint"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="@string/compatibility_decoder"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/app_description"
+            android:layout_weight="1"
+            android:text="@string/footer_hint"
             android:textColor="@color/text_secondary"
-            android:textSize="18sp" />
+            android:textSize="13sp" />
 
-        <TextView
-            android:id="@+id/permission_status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:textColor="@color/warning"
-            android:textSize="18sp"
+        <Button
+            android:id="@+id/stop_stream_button"
+            android:layout_width="wrap_content"
+            android:layout_height="46dp"
+            android:background="@drawable/button_danger_background"
+            android:focusable="true"
+            android:minWidth="168dp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:text="@string/stop_stream"
+            android:textAllCaps="false"
+            android:textColor="@color/danger"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
         <Button
-            android:id="@+id/grant_permission_button"
+            android:id="@+id/refresh_status_button"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/grant_overlay_permission" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="@string/api_address_label"
-            android:textColor="@color/text_secondary"
-            android:textSize="16sp"
+            android:layout_height="46dp"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/button_primary_background"
+            android:focusable="true"
+            android:minWidth="150dp"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:text="@string/refresh_status"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="14sp"
             android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/api_address"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:fontFamily="monospace"
-            android:textColor="@color/primary_dark"
-            android:textIsSelectable="true"
-            android:textSize="22sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/service_status"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/api_service_starting"
-            android:textColor="@color/success"
-            android:textSize="17sp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
-            android:text="@string/sound_mode_label"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="@string/sound_mode_description"
-            android:textColor="@color/text_secondary"
-            android:textSize="16sp" />
-
-        <RadioGroup
-            android:id="@+id/sound_mode_group"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="vertical">
-
-            <RadioButton
-                android:id="@+id/sound_mode_follow_api"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:text="@string/sound_mode_follow_api"
-                android:textColor="@color/text_primary"
-                android:textSize="17sp" />
-
-            <RadioButton
-                android:id="@+id/sound_mode_always_on"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:text="@string/sound_mode_always_on"
-                android:textColor="@color/text_primary"
-                android:textSize="17sp" />
-
-            <RadioButton
-                android:id="@+id/sound_mode_always_off"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:text="@string/sound_mode_always_off"
-                android:textColor="@color/text_primary"
-                android:textSize="17sp" />
-        </RadioGroup>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/decoder_setting_label"
-            android:textColor="@color/text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="@string/decoder_setting_description"
-            android:textColor="@color/text_secondary"
-            android:textSize="16sp" />
-
-        <CheckBox
-            android:id="@+id/compatibility_decoder"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:minHeight="48dp"
-            android:text="@string/compatibility_decoder"
-            android:textColor="@color/text_primary"
-            android:textSize="17sp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:background="#EEF3F6"
-            android:fontFamily="monospace"
-            android:padding="18dp"
-            android:text="@string/api_usage"
-            android:textColor="@color/text_primary"
-            android:textSize="16sp" />
-
-        <LinearLayout
-            style="?android:attr/buttonBarStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/stop_stream_button"
-                style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/stop_stream" />
-
-            <Button
-                android:id="@+id/refresh_status_button"
-                style="?android:attr/buttonBarButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:text="@string/refresh_status" />
-        </LinearLayout>
     </LinearLayout>
-</ScrollView>
+</LinearLayout>

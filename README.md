@@ -20,6 +20,8 @@ not unexpectedly replace the television's current audio.
 - Optionally plays a rapid ambulance-style siren when a stream starts or takes over.
 - Provides persistent Follow API, Always on, and Always off sound policies on the TV.
 - Automatically enables a software-decoder compatibility mode on affected Amlogic MiBox hardware.
+- Presents service health, the LAN API address, API shortcuts, and persistent preferences in a
+  remote-friendly two-column TV dashboard.
 - Removes the window immediately on stop, before releasing the media player.
 - Uses interleaved RTP-over-RTSP/TCP for reliable Frigate/go2rtc playback.
 - Runs as a foreground service and starts again after the TV boots.
@@ -28,7 +30,8 @@ not unexpectedly replace the television's current audio.
 
 ## TV setup
 
-1. Install and open Camera on TV.
+1. Install and open Camera on TV. The dashboard is designed to keep connection status, the API
+   address, stream controls, and all preferences visible together on a 16:9 television.
 2. Select **Grant overlay permission** and enable **Display over other apps** for Camera on TV.
 3. Return to the app and note the API address displayed on screen, for example
    `http://192.168.1.50:8787`.
@@ -37,6 +40,12 @@ not unexpectedly replace the television's current audio.
    can be overridden manually.
 6. Leave the foreground service running. It restarts after TV boot and continues when the activity
    is closed.
+
+Navigate with the TV remote's directional pad and press **OK** to change an alarm or compatibility
+setting. The currently focused control has a high-contrast amber outline, the selected option has a
+teal background, and every change is saved immediately. **Stop current stream** removes an active
+overlay, while **Refresh status** updates the permission, network, and service information shown on
+the dashboard.
 
 The TV and API client must be reachable on the same network. The API has no authentication and must
 not be exposed to the public Internet. Use a trusted LAN, VLAN, or firewall rules to restrict it.

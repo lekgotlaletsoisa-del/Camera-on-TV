@@ -18,16 +18,18 @@ import java.net.NetworkInterface;
 import java.util.Collections;
 
 /**
- * Configuration and status screen for the Camera on TV background service.
+ * Remote-friendly configuration and status dashboard for the Camera on TV background service.
  *
  * <p>The activity is not involved in playback. It obtains Android's one-time overlay permission,
- * starts the persistent REST service, and shows the address clients should call.</p>
+ * starts the persistent REST service, shows the address clients should call, and persists the
+ * alarm and decoder preferences selected with the TV remote.</p>
  */
 public final class MainActivity extends Activity {
 
     private TextView permissionStatus;
     private TextView apiAddress;
     private TextView serviceStatus;
+    private TextView dashboardStatus;
     private Button grantPermissionButton;
     private RadioGroup soundModeGroup;
     private CheckBox compatibilityDecoder;
@@ -51,6 +53,7 @@ public final class MainActivity extends Activity {
         permissionStatus = findViewById(R.id.permission_status);
         apiAddress = findViewById(R.id.api_address);
         serviceStatus = findViewById(R.id.service_status);
+        dashboardStatus = findViewById(R.id.dashboard_status);
         grantPermissionButton = findViewById(R.id.grant_permission_button);
         soundModeGroup = findViewById(R.id.sound_mode_group);
         compatibilityDecoder = findViewById(R.id.compatibility_decoder);
@@ -64,6 +67,7 @@ public final class MainActivity extends Activity {
 
         startApiService();
         refreshStatus();
+        serviceStatus.postDelayed(this::refreshStatus, 750L);
     }
 
     /** Refreshes permission and network information after returning from Android settings. */
@@ -111,9 +115,18 @@ public final class MainActivity extends Activity {
         apiAddress.setText(address == null
                 ? getString(R.string.api_address_unavailable)
                 : "http://" + address + ":" + CameraOverlayService.API_PORT);
-        serviceStatus.setText(CameraOverlayService.isRunning()
+        boolean serviceRunning = CameraOverlayService.isRunning();
+        serviceStatus.setText(serviceRunning
                 ? R.string.api_service_running
                 : R.string.api_service_starting);
+        boolean ready = permissionGranted && serviceRunning;
+        dashboardStatus.setText(ready
+                ? R.string.dashboard_ready
+                : permissionGranted ? R.string.dashboard_starting : R.string.dashboard_setup_required);
+        dashboardStatus.setTextColor(getColor(ready ? R.color.success_dark : R.color.warning));
+        dashboardStatus.setBackgroundResource(ready
+                ? R.drawable.status_ready_background
+                : R.drawable.status_warning_background);
         refreshSoundMode();
         refreshDecoderSetting();
     }
