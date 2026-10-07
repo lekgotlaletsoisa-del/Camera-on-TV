@@ -1,6 +1,7 @@
 package za.co.cameraontv;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -59,6 +60,7 @@ public final class MainActivity extends Activity {
         compatibilityDecoder = findViewById(R.id.compatibility_decoder);
 
         grantPermissionButton.setOnClickListener(view -> requestOverlayPermission());
+        findViewById(R.id.help_button).setOnClickListener(view -> showUsageGuide());
         findViewById(R.id.stop_stream_button).setOnClickListener(view -> stopCurrentStream());
         findViewById(R.id.refresh_status_button).setOnClickListener(view -> refreshStatus());
         soundModeGroup.setOnCheckedChangeListener((group, checkedId) -> saveSoundMode(checkedId));
@@ -92,6 +94,22 @@ public final class MainActivity extends Activity {
                 Uri.parse("package:" + getPackageName()));
         startActivity(intent);
         Toast.makeText(this, R.string.permission_screen_opened, Toast.LENGTH_LONG).show();
+    }
+
+    /** Opens an on-TV guide containing setup steps and the essential REST commands. */
+    private void showUsageGuide() {
+        View helpView = getLayoutInflater().inflate(R.layout.dialog_help, null, false);
+        TextView helpApiAddress = helpView.findViewById(R.id.help_api_address);
+        helpApiAddress.setText(apiAddress.getText());
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.help_title)
+                .setView(helpView)
+                .create();
+        Button closeButton = helpView.findViewById(R.id.help_close_button);
+        closeButton.setOnClickListener(ignored -> dialog.dismiss());
+        dialog.setOnShowListener(ignored -> closeButton.requestFocus());
+        dialog.show();
     }
 
     private void stopCurrentStream() {

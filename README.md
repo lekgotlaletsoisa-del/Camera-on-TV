@@ -13,6 +13,16 @@ The player uses AndroidX Media3 with RTSP support. It accepts H.264 video and th
 formats supported by the installed Media3 version. Playback is muted by default so a camera does
 not unexpectedly replace the television's current audio.
 
+## Documentation map
+
+- Open **How to use** in the TV app for the essential setup and API commands using the TV's current
+  network address.
+- Continue to [REST API](#rest-api) for the complete request and response contract.
+- See [Home Assistant and Frigate](#home-assistant-and-frigate) for a two-camera automation.
+- See [Build and install](#build-and-install) for developer installation and verification.
+- Review [Troubleshooting](#troubleshooting) when the API, overlay, video, or sound is unavailable.
+- Read [CHANGELOG.md](CHANGELOG.md) for version history.
+
 ## Features
 
 - Starts, replaces, and stops the overlay through a small JSON REST API.
@@ -22,6 +32,8 @@ not unexpectedly replace the television's current audio.
 - Automatically enables a software-decoder compatibility mode on affected Amlogic MiBox hardware.
 - Presents service health, the LAN API address, API shortcuts, and persistent preferences in a
   remote-friendly two-column TV dashboard.
+- Includes an on-TV **How to use** guide with the live API address, essential commands, takeover
+  behavior, sound defaults, and network-safety guidance.
 - Removes the window immediately on stop, before releasing the media player.
 - Uses interleaved RTP-over-RTSP/TCP for reliable Frigate/go2rtc playback.
 - Runs as a foreground service and starts again after the TV boots.
@@ -45,7 +57,7 @@ Navigate with the TV remote's directional pad and press **OK** to change an alar
 setting. The currently focused control has a high-contrast amber outline, the selected option has a
 teal background, and every change is saved immediately. **Stop current stream** removes an active
 overlay, while **Refresh status** updates the permission, network, and service information shown on
-the dashboard.
+the dashboard. Select **How to use** at any time for an on-TV quick-start guide and REST examples.
 
 The TV and API client must be reachable on the same network. The API has no authentication and must
 not be exposed to the public Internet. Use a trusted LAN, VLAN, or firewall rules to restrict it.
@@ -53,6 +65,19 @@ not be exposed to the public Internet. Use a trusted LAN, VLAN, or firewall rule
 ## REST API
 
 All responses use JSON. Browser clients are supported through permissive CORS headers.
+
+| Method | Path | Purpose | Success |
+| --- | --- | --- | --- |
+| `GET` | `/` | Discover the available commands | `200 OK` |
+| `GET` | `/status` | Read service, permission, playback, sound, and decoder state | `200 OK` |
+| `POST` or `PUT` | `/stream` | Start a stream or replace the active stream | `202 Accepted` |
+| `DELETE` | `/stream` | Stop the active stream immediately | `200 OK` |
+| `POST` | `/stop` | Stop fallback for clients that cannot send `DELETE` | `200 OK` |
+| `OPTIONS` | any path | CORS preflight | `204 No Content` |
+
+Invalid JSON or an invalid RTSP URL returns `400 Bad Request`. A start request without overlay
+permission returns `409 Conflict`; an unknown endpoint returns `404 Not Found`. Error responses use
+`{"message":"..."}`. A successful start response also includes `"accepted":true`.
 
 ### Start or replace a stream
 
@@ -249,6 +274,17 @@ Requirements:
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
+For wireless ADB, enable the TV's developer options and USB/network debugging, accept the TV's
+authorization prompt, then use the TV address shown by Android's network settings:
+
+```bash
+adb connect TV_IP:5555
+adb -s TV_IP:5555 install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Wireless-debugging menus and pairing requirements vary by Android TV version. Keep ADB available
+only on a trusted network and disable network debugging when maintenance is complete.
+
 The application targets Android TV and supports Android 6.0 (API 23) and later. On Android 8.0 and
 later, the API runs as a foreground media-playback service with a persistent low-priority
 notification.
@@ -291,8 +327,53 @@ Run all local verification tasks with:
 - Credentials embedded in RTSP URLs may appear in API status responses. Only trusted systems should
   call the API.
 
+## Troubleshooting
+
+### The API cannot be reached
+
+- Confirm the dashboard says **READY** and **REST API service running**.
+- Use the exact address currently displayed on the TV; DHCP may have changed it after a restart.
+- Confirm the controller and television are on the same trusted network and that client isolation or
+  a firewall is not blocking TCP port `8787`.
+- Test discovery first with `curl http://TV_IP:8787/`, followed by
+  `curl http://TV_IP:8787/status`.
+
+### The API accepts the request but no overlay appears
+
+- Confirm **Overlay permission granted** appears in the TV dashboard.
+- Check the `playback` and `error` fields from `GET /status`.
+- Verify that the camera URL starts with `rtsp://`, is reachable from the TV, and provides a format
+  supported by Media3 and the device decoder. H.264 is the recommended format.
+
+### The underlying video app becomes black after an overlay closes
+
+Leave **MiBox compatibility decoder** enabled on affected Xiaomi/Amlogic devices. It is selected
+automatically when recommended. On other devices, enable it only when hardware-decoder contention
+is observed; software decoding uses more CPU.
+
+### The alarm is silent
+
+- Send `"sound":true` in the start request and confirm the TV setting is **Follow REST request** or
+  **Always play alarm**.
+- Check the television's media volume and mute state. The app does not change system volume.
+- Remember that `muted` controls camera audio, while `sound` independently controls the alarm.
+
+## Security and privacy
+
+Camera on TV has no cloud service, account, telemetry, or remote relay. Preferences remain in the
+app's private Android storage. The REST API intentionally has no authentication, uses plain HTTP,
+and may report an RTSP URL containing camera credentials through `GET /status`. Run it only on a
+trusted LAN or isolated camera VLAN. Never forward port `8787` from the Internet, and use firewall
+rules when untrusted clients share the network.
+
 ## Contributing
 
 Bug reports and focused pull requests are welcome. Before opening a pull request, run the complete
 Gradle verification command above and describe the Android TV model and Android version used for
 device testing.
+
+## License
+
+This repository does not currently include an open-source license. Its public visibility allows the
+source to be viewed, but does not by itself grant reuse or redistribution rights. Add an explicit
+license before offering the project for third-party redistribution.

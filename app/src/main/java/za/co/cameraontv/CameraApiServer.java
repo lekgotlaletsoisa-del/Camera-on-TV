@@ -19,18 +19,43 @@ import fi.iki.elonen.NanoHTTPD;
  */
 final class CameraApiServer extends NanoHTTPD {
 
+    /** Operations the HTTP transport can request from the foreground overlay service. */
     interface Controller {
+        /**
+         * Requests a new overlay, replacing any stream that is already active.
+         *
+         * @param rtspUrl validated RTSP URL
+         * @param muted whether camera audio should be muted
+         * @param soundRequested whether the request asks the app to play its alarm
+         * @return acceptance state and a human-readable result message
+         */
         StartResult startStream(String rtspUrl, boolean muted, boolean soundRequested);
 
+        /** Requests immediate removal of the current overlay. */
         void stopStream();
 
+        /**
+         * Captures the current service, permission, playback, and preference state.
+         *
+         * @return JSON object returned by {@code GET /status}
+         */
         JSONObject getStatus();
     }
 
+    /** Immutable result of submitting a stream-start command to the controller. */
     static final class StartResult {
+        /** Whether the controller accepted the command for asynchronous preparation. */
         final boolean accepted;
+
+        /** Human-readable explanation included in the JSON response. */
         final String message;
 
+        /**
+         * Creates a controller result.
+         *
+         * @param accepted whether playback preparation was accepted
+         * @param message response message for the API client
+         */
         StartResult(boolean accepted, String message) {
             this.accepted = accepted;
             this.message = message;
@@ -39,12 +64,23 @@ final class CameraApiServer extends NanoHTTPD {
 
     private final Controller controller;
 
+    /**
+     * Creates a server bound to all interfaces on the requested port.
+     *
+     * @param port TCP listen port
+     * @param controller overlay operations invoked by validated requests
+     */
     CameraApiServer(int port, Controller controller) {
         super(port);
         this.controller = controller;
     }
 
-    /** Routes status, start, stop, and CORS preflight requests. */
+    /**
+     * Routes status, start, stop, root-discovery, and CORS preflight requests.
+     *
+     * @param session NanoHTTPD request session
+     * @return JSON response with permissive LAN CORS headers and caching disabled
+     */
     @Override
     public Response serve(IHTTPSession session) {
         if (Method.OPTIONS.equals(session.getMethod())) {
