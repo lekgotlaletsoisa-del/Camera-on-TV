@@ -57,6 +57,7 @@ public final class CameraOverlayService extends Service implements CameraApiServ
     private static volatile boolean running;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final ChimePlayer chimePlayer = new ChimePlayer(mainHandler);
     private final AtomicLong commandGeneration = new AtomicLong();
     private WindowManager windowManager;
     private View overlayView;
@@ -242,6 +243,7 @@ public final class CameraOverlayService extends Service implements CameraApiServ
             playerView.setPlayer(player);
 
             windowManager.addView(overlayView, createOverlayLayoutParams());
+            chimePlayer.play();
             RtspMediaSource mediaSource = new RtspMediaSource.Factory()
                     .setForceUseRtpTcp(true)
                     .createMediaSource(MediaItem.fromUri(rtspUrl));
@@ -281,6 +283,7 @@ public final class CameraOverlayService extends Service implements CameraApiServ
     }
 
     private void removeOverlayAndReleasePlayer() {
+        chimePlayer.stop();
         if (overlayView != null) {
             try {
                 windowManager.removeViewImmediate(overlayView);
