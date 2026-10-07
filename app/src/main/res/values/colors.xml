@@ -1,0 +1,10 @@
+<resources>
+    <color name="screen_background">#F4F7FA</color>
+    <color name="panel_background">#FFFFFF</color>
+    <color name="primary">#075E54</color>
+    <color name="primary_dark">#03483F</color>
+    <color name="text_primary">#17212B</color>
+    <color name="text_secondary">#536471</color>
+    <color name="success">#137333</color>
+    <color name="warning">#A14200</color>
+</resources>

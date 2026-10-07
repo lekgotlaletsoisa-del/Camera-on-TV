@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Camera on TV</string>
+    <string name="app_heading">Camera on TV</string>
+    <string name="app_description">Shows an RTSP camera stream over the top-right corner of any TV app. Control it from another device on this network through the REST API.</string>
+    <string name="overlay_permission_required">Overlay permission is required before a camera can appear over other apps.</string>
+    <string name="overlay_permission_granted">Overlay permission granted</string>
+    <string name="grant_overlay_permission">Grant overlay permission</string>
+    <string name="api_service_running">REST API service running</string>
+    <string name="api_service_starting">Starting REST API service…</string>
+    <string name="api_address_label">API address</string>
+    <string name="api_address_unavailable">Connect the TV to a network to see its API address.</string>
+    <string name="api_usage">Start stream:\nPOST /stream with JSON {&quot;url&quot;:&quot;rtsp://camera/stream&quot;}\n\nStop immediately:\nDELETE /stream\n\nCheck state:\nGET /status</string>
+    <string name="stop_stream">Stop current stream</string>
+    <string name="refresh_status">Refresh status</string>
+    <string name="notification_channel_name">Camera overlay</string>
+    <string name="notification_title">Camera on TV is ready</string>
+    <string name="notification_text">REST API listening on port 8787</string>
+    <string name="permission_screen_opened">Allow Camera on TV to display over other apps, then return here.</string>
+    <string name="stream_stop_requested">Stream stopped</string>
+</resources>

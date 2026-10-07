@@ -1,0 +1,8 @@
+<resources>
+
+    <style name="Theme.CameraOnTV" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorAccent">@color/primary</item>
+        <item name="android:windowBackground">@color/screen_background</item>
+        <item name="android:fontFamily">sans</item>
+    </style>
+</resources>
