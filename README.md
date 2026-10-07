@@ -17,7 +17,8 @@ not unexpectedly replace the television's current audio.
 
 - Starts, replaces, and stops the overlay through a small JSON REST API.
 - Replaces the current stream atomically when a newer camera request arrives.
-- Plays a rapid ambulance-style siren whenever a stream starts or takes over.
+- Optionally plays a rapid ambulance-style siren when a stream starts or takes over.
+- Provides persistent Follow API, Always on, and Always off sound policies on the TV.
 - Removes the window immediately on stop, before releasing the media player.
 - Uses interleaved RTP-over-RTSP/TCP for reliable Frigate/go2rtc playback.
 - Runs as a foreground service and starts again after the TV boots.
@@ -30,7 +31,8 @@ not unexpectedly replace the television's current audio.
 2. Select **Grant overlay permission** and enable **Display over other apps** for Camera on TV.
 3. Return to the app and note the API address displayed on screen, for example
    `http://192.168.1.50:8787`.
-4. Leave the foreground service running. It restarts after TV boot and continues when the activity
+4. Choose the **Alarm sound** policy. **Follow REST request** is the default.
+5. Leave the foreground service running. It restarts after TV boot and continues when the activity
    is closed.
 
 The TV and API client must be reachable on the same network. The API has no authentication and must
@@ -48,16 +50,20 @@ Content-Type: application/json
 
 {
   "url": "rtsp://camera.example/stream",
-  "muted": true
+  "muted": true,
+  "sound": true
 }
 ```
 
 `url` is required and must use the `rtsp://` scheme. `muted` is optional and defaults to `true`.
+`sound` is optional and defaults to `false`.
 Starting a stream replaces any currently visible stream. A successful request returns HTTP 202
 because player preparation continues asynchronously.
 
-Every accepted start or replacement plays the app's rapid sweeping siren through the TV speakers.
-The alarm is independent of `muted`, which controls only the RTSP stream's audio track.
+When `sound` is `true`, an accepted start or replacement plays the app's rapid sweeping siren
+through the TV speakers. The alarm is independent of `muted`, which controls only the RTSP
+stream's audio track. The TV settings screen can override requests with **Always play alarm** or
+**Never play alarm**; **Follow REST request** preserves the request value.
 
 `PUT /stream` is accepted as an alternative to `POST /stream`.
 
@@ -66,7 +72,7 @@ Example:
 ```bash
 curl -X POST http://TV_IP:8787/stream \
   -H 'Content-Type: application/json' \
-  -d '{"url":"rtsp://user:password@CAMERA_IP:554/stream","muted":true}'
+  -d '{"url":"rtsp://user:password@CAMERA_IP:554/stream","muted":true,"sound":true}'
 ```
 
 ### Stop a stream
@@ -88,8 +94,9 @@ curl -X DELETE http://TV_IP:8787/stream
 GET /status
 ```
 
-The response reports service state, overlay permission, playback state, mute state, active URL, and
-the most recent playback error. The root endpoint (`GET /`) returns a short endpoint summary.
+The response reports service state, overlay permission, playback state, mute state, the requested
+and effective sound states, the persistent sound policy, active URL, and the most recent playback
+error. The root endpoint (`GET /`) returns a short endpoint summary.
 
 Example response:
 
@@ -100,6 +107,9 @@ Example response:
   "overlayPermission": true,
   "playback": "playing",
   "muted": true,
+  "soundRequested": true,
+  "soundEnabled": true,
+  "soundMode": "follow_api",
   "url": "rtsp://camera.example/stream",
   "error": null
 }
@@ -107,10 +117,11 @@ Example response:
 
 ## Home Assistant and Frigate
 
-The following example starts the stream only once, waits for Frigate's matching MQTT end event,
-and then stops the overlay. It does not renew the video periodically. Because the automation uses
-`mode: restart`, a new qualifying camera event replaces the active stream and becomes the only
-event allowed to stop it.
+The following example shows every new person tracked by either configured camera. It requests no
+sound outside the corresponding alert zone, and requests sound when the person is already in or
+newly enters that zone. It waits for Frigate's matching MQTT end event and never renews the video
+periodically. Because the automation uses `mode: restart`, a newer qualifying event becomes the
+only event allowed to stop the active stream.
 
 Replace `TV_IP`, `FRIGATE_IP`, the TV entity, camera names, and zone names with values from your
 installation.
@@ -124,7 +135,7 @@ rest_command:
     content_type: "application/json"
     timeout: 8
     payload: >-
-      {{ {"url": video, "muted": true} | to_json }}
+      {{ {"url": video, "muted": true, "sound": sound | default(false) | bool} | to_json }}
 
   camera_on_tv_stop:
     url: "http://TV_IP:8787/stream"
@@ -152,13 +163,16 @@ rest_command:
         {% set camera = after.get('camera') %}
         {% set zone = 'left_zone' if camera == 'outside_left_camera'
            else 'right_zone' if camera == 'outside_right_camera' else none %}
-        {{ event.get('type') in ['new', 'update']
+        {% set is_new = event.get('type') == 'new' %}
+        {% set entered_zone = event.get('type') == 'update'
+           and zone is not none
+           and zone in (after.get('entered_zones') or [])
+           and zone not in (before.get('entered_zones') or []) %}
+        {{ (is_new or entered_zone)
            and after.get('label') == 'person'
            and after.get('id')
            and after.get('end_time') is none
-           and zone is not none
-           and zone in (after.get('entered_zones') or [])
-           and zone not in (before.get('entered_zones') or []) }}
+           and zone is not none }}
   actions:
     - variables:
         event_id: "{{ trigger.payload_json['after']['id'] }}"
@@ -168,9 +182,15 @@ rest_command:
             'outside_left_camera': 'rtsp://FRIGATE_IP:8554/outside_left_camera',
             'outside_right_camera': 'rtsp://FRIGATE_IP:8554/outside_right_camera'
           }.get(camera) }}
+        sound_enabled: >-
+          {% set after = trigger.payload_json['after'] %}
+          {% set zone = 'left_zone' if camera == 'outside_left_camera'
+             else 'right_zone' %}
+          {{ zone in (after.get('entered_zones') or []) }}
     - action: rest_command.camera_on_tv_start
       data:
         video: "{{ stream_url }}"
+        sound: "{{ sound_enabled }}"
     - repeat:
         sequence:
           - wait_for_trigger:
@@ -231,6 +251,7 @@ Run all local verification tasks with:
 - `CameraOverlayService` owns the foreground service, overlay window, Media3 player, and API server.
 - `CameraApiServer` validates REST requests and passes commands to the service controller.
 - `AlarmPlayer` synthesizes the sweeping alert at runtime, so no external audio asset is needed.
+- `SoundSettings` persists and applies the user's REST-request override.
 - `BootReceiver` restores the foreground service after Android finishes booting.
 
 ## Operational notes
@@ -239,8 +260,8 @@ Run all local verification tasks with:
   against the top-right edges of the display.
 - The overlay does not accept focus or touch input, so remote-control input continues to reach the
   underlying TV application.
-- The alarm uses the television's media-audio path and current volume. Camera audio remains muted
-  when the API request uses `"muted": true`.
+- An enabled alarm uses the television's media-audio path and current volume. Camera audio remains
+  muted when the API request uses `"muted": true`.
 - RTSP startup time still depends on camera responsiveness, codec initialization, and network
   latency. The player uses a deliberately short live buffer to reduce startup delay and forces
   interleaved RTP-over-RTSP/TCP for compatibility with Frigate/go2rtc streams.

@@ -20,7 +20,7 @@ import fi.iki.elonen.NanoHTTPD;
 final class CameraApiServer extends NanoHTTPD {
 
     interface Controller {
-        StartResult startStream(String rtspUrl, boolean muted);
+        StartResult startStream(String rtspUrl, boolean muted, boolean soundRequested);
 
         void stopStream();
 
@@ -59,7 +59,8 @@ final class CameraApiServer extends NanoHTTPD {
             if (Method.GET.equals(session.getMethod()) && "/".equals(path)) {
                 JSONObject body = new JSONObject();
                 body.put("name", "Camera on TV");
-                body.put("start", "POST /stream with JSON {\"url\":\"rtsp://...\",\"muted\":true}");
+                body.put("start", "POST /stream with JSON "
+                        + "{\"url\":\"rtsp://...\",\"muted\":true,\"sound\":false}");
                 body.put("stop", "DELETE /stream or POST /stop");
                 body.put("status", "GET /status");
                 return response(Response.Status.OK, body);
@@ -96,12 +97,15 @@ final class CameraApiServer extends NanoHTTPD {
             boolean muted = request.has("muted")
                     ? request.optBoolean("muted", true)
                     : parseBoolean(firstParameter(session, "muted"), true);
+            boolean soundRequested = request.has("sound")
+                    ? request.optBoolean("sound", false)
+                    : parseBoolean(firstParameter(session, "sound"), false);
             if (!isValidRtspUrl(url)) {
                 return response(Response.Status.BAD_REQUEST,
                         message("A valid rtsp:// URL is required"));
             }
 
-            StartResult result = controller.startStream(url, muted);
+            StartResult result = controller.startStream(url, muted, soundRequested);
             JSONObject body = message(result.message);
             body.put("accepted", result.accepted);
             return response(result.accepted ? Response.Status.ACCEPTED : Response.Status.CONFLICT, body);

@@ -77,6 +77,58 @@
             android:textSize="17sp" />
 
         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="@string/sound_mode_label"
+            android:textColor="@color/text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/sound_mode_description"
+            android:textColor="@color/text_secondary"
+            android:textSize="16sp" />
+
+        <RadioGroup
+            android:id="@+id/sound_mode_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/sound_mode_follow_api"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/sound_mode_follow_api"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp" />
+
+            <RadioButton
+                android:id="@+id/sound_mode_always_on"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/sound_mode_always_on"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp" />
+
+            <RadioButton
+                android:id="@+id/sound_mode_always_off"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/sound_mode_always_off"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp" />
+        </RadioGroup>
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"

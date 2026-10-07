@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,6 +28,8 @@ public final class MainActivity extends Activity {
     private TextView apiAddress;
     private TextView serviceStatus;
     private Button grantPermissionButton;
+    private RadioGroup soundModeGroup;
+    private boolean refreshingSoundMode;
 
     /** Creates the activity instance required by the Android component loader. */
     public MainActivity() {
@@ -46,10 +49,12 @@ public final class MainActivity extends Activity {
         apiAddress = findViewById(R.id.api_address);
         serviceStatus = findViewById(R.id.service_status);
         grantPermissionButton = findViewById(R.id.grant_permission_button);
+        soundModeGroup = findViewById(R.id.sound_mode_group);
 
         grantPermissionButton.setOnClickListener(view -> requestOverlayPermission());
         findViewById(R.id.stop_stream_button).setOnClickListener(view -> stopCurrentStream());
         findViewById(R.id.refresh_status_button).setOnClickListener(view -> refreshStatus());
+        soundModeGroup.setOnCheckedChangeListener((group, checkedId) -> saveSoundMode(checkedId));
 
         startApiService();
         refreshStatus();
@@ -103,6 +108,42 @@ public final class MainActivity extends Activity {
         serviceStatus.setText(CameraOverlayService.isRunning()
                 ? R.string.api_service_running
                 : R.string.api_service_starting);
+        refreshSoundMode();
+    }
+
+    private void refreshSoundMode() {
+        int checkedId;
+        switch (SoundSettings.getMode(this)) {
+            case ALWAYS_ON:
+                checkedId = R.id.sound_mode_always_on;
+                break;
+            case ALWAYS_OFF:
+                checkedId = R.id.sound_mode_always_off;
+                break;
+            case FOLLOW_API:
+            default:
+                checkedId = R.id.sound_mode_follow_api;
+                break;
+        }
+        refreshingSoundMode = true;
+        soundModeGroup.check(checkedId);
+        refreshingSoundMode = false;
+    }
+
+    private void saveSoundMode(int checkedId) {
+        if (refreshingSoundMode || checkedId == View.NO_ID) {
+            return;
+        }
+        SoundSettings.Mode mode;
+        if (checkedId == R.id.sound_mode_always_on) {
+            mode = SoundSettings.Mode.ALWAYS_ON;
+        } else if (checkedId == R.id.sound_mode_always_off) {
+            mode = SoundSettings.Mode.ALWAYS_OFF;
+        } else {
+            mode = SoundSettings.Mode.FOLLOW_API;
+        }
+        SoundSettings.setMode(this, mode);
+        Toast.makeText(this, R.string.sound_mode_saved, Toast.LENGTH_SHORT).show();
     }
 
     private static String findLanIpv4Address() {

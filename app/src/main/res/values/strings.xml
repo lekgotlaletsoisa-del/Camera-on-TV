@@ -9,7 +9,13 @@
     <string name="api_service_starting">Starting REST API service…</string>
     <string name="api_address_label">API address</string>
     <string name="api_address_unavailable">Connect the TV to a network to see its API address.</string>
-    <string name="api_usage">Start stream:\nPOST /stream with JSON {&quot;url&quot;:&quot;rtsp://camera/stream&quot;}\n\nStop immediately:\nDELETE /stream\n\nCheck state:\nGET /status</string>
+    <string name="sound_mode_label">Alarm sound</string>
+    <string name="sound_mode_description">Choose whether the app follows each REST request or overrides it for every camera.</string>
+    <string name="sound_mode_follow_api">Follow REST request (default)</string>
+    <string name="sound_mode_always_on">Always play alarm</string>
+    <string name="sound_mode_always_off">Never play alarm</string>
+    <string name="sound_mode_saved">Alarm sound setting saved</string>
+    <string name="api_usage">Start stream:\nPOST /stream with JSON {&quot;url&quot;:&quot;rtsp://camera/stream&quot;,&quot;sound&quot;:true}\n\nStop immediately:\nDELETE /stream\n\nCheck state:\nGET /status</string>
     <string name="stop_stream">Stop current stream</string>
     <string name="refresh_status">Refresh status</string>
     <string name="notification_channel_name">Camera overlay</string>

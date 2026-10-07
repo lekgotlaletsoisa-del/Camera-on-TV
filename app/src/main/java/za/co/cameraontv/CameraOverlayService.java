@@ -68,6 +68,8 @@ public final class CameraOverlayService extends Service implements CameraApiServ
     private volatile String playbackState = "stopped";
     private volatile String lastError;
     private volatile boolean muted = true;
+    private volatile boolean soundRequested;
+    private volatile boolean soundEnabled;
 
     /** Creates the service instance required by the Android component loader. */
     public CameraOverlayService() {
@@ -125,24 +127,31 @@ public final class CameraOverlayService extends Service implements CameraApiServ
      *
      * @param rtspUrl validated RTSP URL to play
      * @param shouldMute whether the stream audio should be muted
+     * @param shouldRequestSound whether the REST client requested the alarm
      * @return an accepted result, or a rejected result when overlay permission is missing
      */
     @Override
-    public CameraApiServer.StartResult startStream(String rtspUrl, boolean shouldMute) {
+    public CameraApiServer.StartResult startStream(
+            String rtspUrl,
+            boolean shouldMute,
+            boolean shouldRequestSound) {
         if (!Settings.canDrawOverlays(this)) {
             return new CameraApiServer.StartResult(
                     false,
                     "Overlay permission is not granted. Open Camera on TV on the television first.");
         }
 
+        boolean shouldPlayAlarm = SoundSettings.shouldPlay(this, shouldRequestSound);
         currentUrl = rtspUrl;
         muted = shouldMute;
+        soundRequested = shouldRequestSound;
+        soundEnabled = shouldPlayAlarm;
         playbackState = "starting";
         lastError = null;
         long generation = commandGeneration.incrementAndGet();
         mainHandler.postAtFrontOfQueue(() -> {
             if (commandGeneration.get() == generation) {
-                showStream(rtspUrl, shouldMute);
+                showStream(rtspUrl, shouldMute, shouldPlayAlarm, generation);
             }
         });
         return new CameraApiServer.StartResult(true, "Stream start requested");
@@ -154,6 +163,8 @@ public final class CameraOverlayService extends Service implements CameraApiServ
         currentUrl = null;
         playbackState = "stopped";
         lastError = null;
+        soundRequested = false;
+        soundEnabled = false;
         commandGeneration.incrementAndGet();
         mainHandler.postAtFrontOfQueue(this::removeOverlayAndReleasePlayer);
     }
@@ -172,6 +183,9 @@ public final class CameraOverlayService extends Service implements CameraApiServ
             status.put("overlayPermission", Settings.canDrawOverlays(this));
             status.put("playback", playbackState);
             status.put("muted", muted);
+            status.put("soundRequested", soundRequested);
+            status.put("soundEnabled", soundEnabled);
+            status.put("soundMode", SoundSettings.getMode(this).value());
             status.put("url", currentUrl == null ? JSONObject.NULL : currentUrl);
             status.put("error", lastError == null ? JSONObject.NULL : lastError);
         } catch (JSONException ignored) {
@@ -204,7 +218,11 @@ public final class CameraOverlayService extends Service implements CameraApiServ
 
     @SuppressLint("InflateParams")
     @OptIn(markerClass = UnstableApi.class)
-    private void showStream(String rtspUrl, boolean shouldMute) {
+    private void showStream(
+            String rtspUrl,
+            boolean shouldMute,
+            boolean shouldPlayAlarm,
+            long generation) {
         removeOverlayAndReleasePlayer();
         currentUrl = rtspUrl;
         muted = shouldMute;
@@ -224,6 +242,9 @@ public final class CameraOverlayService extends Service implements CameraApiServ
             player.addListener(new Player.Listener() {
                 @Override
                 public void onPlaybackStateChanged(int state) {
+                    if (commandGeneration.get() != generation) {
+                        return;
+                    }
                     if (state == Player.STATE_READY) {
                         playbackState = "playing";
                     } else if (state == Player.STATE_BUFFERING) {
@@ -235,6 +256,9 @@ public final class CameraOverlayService extends Service implements CameraApiServ
 
                 @Override
                 public void onPlayerError(PlaybackException error) {
+                    if (commandGeneration.get() != generation) {
+                        return;
+                    }
                     playbackState = "error";
                     lastError = error.getErrorCodeName() + ": " + error.getMessage();
                     removeOverlayAndReleasePlayer();
@@ -243,7 +267,9 @@ public final class CameraOverlayService extends Service implements CameraApiServ
             playerView.setPlayer(player);
 
             windowManager.addView(overlayView, createOverlayLayoutParams());
-            alarmPlayer.play();
+            if (shouldPlayAlarm) {
+                alarmPlayer.play();
+            }
             RtspMediaSource mediaSource = new RtspMediaSource.Factory()
                     .setForceUseRtpTcp(true)
                     .createMediaSource(MediaItem.fromUri(rtspUrl));
@@ -251,9 +277,11 @@ public final class CameraOverlayService extends Service implements CameraApiServ
             player.prepare();
             player.play();
         } catch (RuntimeException exception) {
-            playbackState = "error";
-            lastError = exception.getClass().getSimpleName() + ": " + exception.getMessage();
-            removeOverlayAndReleasePlayer();
+            if (commandGeneration.get() == generation) {
+                playbackState = "error";
+                lastError = exception.getClass().getSimpleName() + ": " + exception.getMessage();
+                removeOverlayAndReleasePlayer();
+            }
         }
     }
 
