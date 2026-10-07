@@ -17,7 +17,7 @@ not unexpectedly replace the television's current audio.
 
 - Starts, replaces, and stops the overlay through a small JSON REST API.
 - Replaces the current stream atomically when a newer camera request arrives.
-- Plays a short built-in two-note chime whenever a stream starts or takes over.
+- Plays a short built-in alternating alarm whenever a stream starts or takes over.
 - Removes the window immediately on stop, before releasing the media player.
 - Uses interleaved RTP-over-RTSP/TCP for reliable Frigate/go2rtc playback.
 - Runs as a foreground service and starts again after the TV boots.
@@ -56,8 +56,8 @@ Content-Type: application/json
 Starting a stream replaces any currently visible stream. A successful request returns HTTP 202
 because player preparation continues asynchronously.
 
-Every accepted start or replacement plays the app's short built-in chime through the TV speakers.
-The chime is independent of `muted`, which controls only the RTSP stream's audio track.
+Every accepted start or replacement plays the app's short built-in alarm through the TV speakers.
+The alarm is independent of `muted`, which controls only the RTSP stream's audio track.
 
 `PUT /stream` is accepted as an alternative to `POST /stream`.
 
@@ -230,7 +230,7 @@ Run all local verification tasks with:
 - `MainActivity` provides setup, permission, service, and network-address status.
 - `CameraOverlayService` owns the foreground service, overlay window, Media3 player, and API server.
 - `CameraApiServer` validates REST requests and passes commands to the service controller.
-- `ChimePlayer` synthesizes the notification sound at runtime, so no external audio asset is needed.
+- `AlarmPlayer` generates the alert pattern at runtime, so no external audio asset is needed.
 - `BootReceiver` restores the foreground service after Android finishes booting.
 
 ## Operational notes
@@ -239,7 +239,7 @@ Run all local verification tasks with:
   against the top-right edges of the display.
 - The overlay does not accept focus or touch input, so remote-control input continues to reach the
   underlying TV application.
-- The chime uses the television's media-audio path and current volume. Camera audio remains muted
+- The alarm uses the television's media-audio path and current volume. Camera audio remains muted
   when the API request uses `"muted": true`.
 - RTSP startup time still depends on camera responsiveness, codec initialization, and network
   latency. The player uses a deliberately short live buffer to reduce startup delay and forces
