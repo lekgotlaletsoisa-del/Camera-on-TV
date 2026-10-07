@@ -5,6 +5,7 @@ the Android `versionName` in `app/build.gradle.kts`.
 
 ## 1.4
 
+- Shortened the camera alert sound to half a second.
 - Added a remote-friendly **How to use** guide inside the TV app.
 - Shows the TV's live REST address alongside start, replace, stop, status, sound, and network-safety
   guidance.

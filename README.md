@@ -97,10 +97,10 @@ Content-Type: application/json
 Starting a stream replaces any currently visible stream. A successful request returns HTTP 202
 because player preparation continues asynchronously.
 
-When `sound` is `true`, an accepted start or replacement plays the app's rapid sweeping siren
-through the TV speakers. The alarm is independent of `muted`, which controls only the RTSP
-stream's audio track. The TV settings screen can override requests with **Always play alarm** or
-**Never play alarm**; **Follow REST request** preserves the request value.
+When `sound` is `true`, an accepted start or replacement plays the app's rapid sweeping siren for
+half a second through the TV speakers. The alarm is independent of `muted`, which controls only the
+RTSP stream's audio track. The TV settings screen can override requests with **Always play alarm**
+or **Never play alarm**; **Follow REST request** preserves the request value.
 
 `PUT /stream` is accepted as an alternative to `POST /stream`.
 

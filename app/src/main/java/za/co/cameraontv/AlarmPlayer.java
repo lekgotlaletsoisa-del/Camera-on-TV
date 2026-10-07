@@ -8,7 +8,7 @@ import android.media.AudioTrack;
 final class AlarmPlayer {
 
     private static final int SAMPLE_RATE_HZ = 48_000;
-    private static final int ALARM_DURATION_MS = 1_900;
+    private static final int ALARM_DURATION_MS = 500;
     private static final int CHUNK_SAMPLE_COUNT = 1_024;
     private static final double SWEEP_RATE_HZ = 4.8;
     private static final double CENTER_FREQUENCY_HZ = 1_050;
