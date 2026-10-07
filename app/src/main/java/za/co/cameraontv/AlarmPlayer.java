@@ -1,83 +1,162 @@
 package za.co.cameraontv;
 
+import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.ToneGenerator;
-import android.os.Handler;
+import android.media.AudioTrack;
 
-/** Generates and plays the alternating alarm heard when a camera overlay starts. */
+/** Synthesizes and plays the ambulance-style alarm heard when a camera overlay starts. */
 final class AlarmPlayer {
 
-    private static final int TONE_VOLUME_PERCENT = 100;
-    private static final int NOTE_COUNT = 8;
-    private static final int NOTE_DURATION_MS = 165;
-    private static final int NOTE_INTERVAL_MS = 190;
-    private static final int RELEASE_DELAY_MS = NOTE_DURATION_MS + 80;
+    private static final int SAMPLE_RATE_HZ = 48_000;
+    private static final int ALARM_DURATION_MS = 1_900;
+    private static final int CHUNK_SAMPLE_COUNT = 1_024;
+    private static final double SWEEP_RATE_HZ = 4.8;
+    private static final double CENTER_FREQUENCY_HZ = 1_050;
+    private static final double FREQUENCY_DEVIATION_HZ = 470;
 
-    private final Handler handler;
-    private ToneGenerator toneGenerator;
+    private final Object playbackLock = new Object();
     private long playbackGeneration;
+    private AudioTrack activeTrack;
 
-    /**
-     * Creates an alarm player whose sequencing callbacks run on the supplied handler.
-     *
-     * @param handler service handler used to sequence and release generated tones
-     */
-    AlarmPlayer(Handler handler) {
-        this.handler = handler;
-    }
-
-    /** Plays a fresh alarm burst, replacing any alarm that is still active. */
+    /** Plays a fresh rapid siren sweep, replacing any alarm that is still active. */
     void play() {
         stop();
-        long generation = ++playbackGeneration;
-        try {
-            ToneGenerator generator = new ToneGenerator(
-                    AudioManager.STREAM_MUSIC,
-                    TONE_VOLUME_PERCENT);
-            toneGenerator = generator;
-            playNote(generator, generation, 0);
-        } catch (RuntimeException ignored) {
-            // An alarm failure must never prevent the camera overlay from appearing.
-            stop();
+        final long generation;
+        synchronized (playbackLock) {
+            generation = ++playbackGeneration;
         }
+        Thread playbackThread = new Thread(
+                () -> playAlarm(generation),
+                "CameraOnTvAlarm");
+        playbackThread.setDaemon(true);
+        playbackThread.start();
     }
 
     /** Stops and releases the active alarm, if present. */
     void stop() {
-        playbackGeneration++;
-        ToneGenerator generator = toneGenerator;
-        toneGenerator = null;
-        if (generator == null) {
-            return;
+        AudioTrack track;
+        synchronized (playbackLock) {
+            playbackGeneration++;
+            track = activeTrack;
+            activeTrack = null;
         }
-        generator.stopTone();
-        generator.release();
-    }
-
-    private void playNote(ToneGenerator generator, long generation, int noteIndex) {
-        if (toneGenerator != generator || playbackGeneration != generation) {
-            return;
-        }
-        int tone = noteIndex % 2 == 0
-                ? ToneGenerator.TONE_DTMF_9
-                : ToneGenerator.TONE_DTMF_1;
-        generator.startTone(tone, NOTE_DURATION_MS);
-        if (noteIndex + 1 < NOTE_COUNT) {
-            handler.postDelayed(
-                    () -> playNote(generator, generation, noteIndex + 1),
-                    NOTE_INTERVAL_MS);
-        } else {
-            handler.postDelayed(
-                    () -> releaseIfActive(generator, generation),
-                    RELEASE_DELAY_MS);
+        if (track != null) {
+            releaseTrack(track);
         }
     }
 
-    private void releaseIfActive(ToneGenerator generator, long generation) {
-        if (toneGenerator != generator || playbackGeneration != generation) {
+    @SuppressWarnings("deprecation") // Legacy constructor works reliably on supported Android 6-9 TVs.
+    private void playAlarm(long generation) {
+        int minimumBufferSize = AudioTrack.getMinBufferSize(
+                SAMPLE_RATE_HZ,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT);
+        if (minimumBufferSize <= 0) {
             return;
         }
-        toneGenerator = null;
-        generator.release();
+
+        AudioTrack track = null;
+        try {
+            track = new AudioTrack(
+                    AudioManager.STREAM_MUSIC,
+                    SAMPLE_RATE_HZ,
+                    AudioFormat.CHANNEL_OUT_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    Math.max(minimumBufferSize, CHUNK_SAMPLE_COUNT * 2),
+                    AudioTrack.MODE_STREAM);
+            if (track.getState() != AudioTrack.STATE_INITIALIZED
+                    || !claimTrack(track, generation)) {
+                track.release();
+                return;
+            }
+
+            track.play();
+            writeAlarm(track, generation);
+            if (isCurrent(track, generation)) {
+                Thread.sleep(100);
+            }
+        } catch (IllegalArgumentException | IllegalStateException ignored) {
+            // An alarm failure must never prevent the camera overlay from appearing.
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        } finally {
+            releaseIfOwned(track, generation);
+        }
+    }
+
+    private void writeAlarm(AudioTrack track, long generation) {
+        int totalSamples = SAMPLE_RATE_HZ * ALARM_DURATION_MS / 1_000;
+        byte[] pcm = new byte[CHUNK_SAMPLE_COUNT * 2];
+        double phase = 0;
+        int generatedSamples = 0;
+
+        while (generatedSamples < totalSamples && isCurrent(track, generation)) {
+            int samplesThisChunk = Math.min(CHUNK_SAMPLE_COUNT, totalSamples - generatedSamples);
+            for (int chunkIndex = 0; chunkIndex < samplesThisChunk; chunkIndex++) {
+                int sampleIndex = generatedSamples + chunkIndex;
+                double time = sampleIndex / (double) SAMPLE_RATE_HZ;
+                double frequency = CENTER_FREQUENCY_HZ
+                        + FREQUENCY_DEVIATION_HZ
+                        * Math.sin(2 * Math.PI * SWEEP_RATE_HZ * time);
+                phase += 2 * Math.PI * frequency / SAMPLE_RATE_HZ;
+
+                double fadeIn = Math.min(1, time / 0.02);
+                double remaining = (totalSamples - sampleIndex) / (double) SAMPLE_RATE_HZ;
+                double fadeOut = Math.min(1, remaining / 0.04);
+                double signal = Math.sin(phase) + 0.22 * Math.sin(2 * phase);
+                int value = (int) Math.round(
+                        Short.MAX_VALUE * 0.70 * fadeIn * fadeOut * signal / 1.22);
+                int byteIndex = chunkIndex * 2;
+                pcm[byteIndex] = (byte) value;
+                pcm[byteIndex + 1] = (byte) (value >> 8);
+            }
+
+            int byteCount = samplesThisChunk * 2;
+            int written = track.write(pcm, 0, byteCount);
+            if (written != byteCount) {
+                return;
+            }
+            generatedSamples += samplesThisChunk;
+        }
+    }
+
+    private boolean claimTrack(AudioTrack track, long generation) {
+        synchronized (playbackLock) {
+            if (playbackGeneration != generation) {
+                return false;
+            }
+            activeTrack = track;
+            return true;
+        }
+    }
+
+    private boolean isCurrent(AudioTrack track, long generation) {
+        synchronized (playbackLock) {
+            return activeTrack == track && playbackGeneration == generation;
+        }
+    }
+
+    private void releaseIfOwned(AudioTrack track, long generation) {
+        if (track == null) {
+            return;
+        }
+        synchronized (playbackLock) {
+            if (activeTrack != track || playbackGeneration != generation) {
+                return;
+            }
+            activeTrack = null;
+        }
+        releaseTrack(track);
+    }
+
+    private static void releaseTrack(AudioTrack track) {
+        try {
+            track.pause();
+            track.flush();
+            track.stop();
+        } catch (IllegalStateException ignored) {
+            // The track may have ended while the stop request was being processed.
+        }
+        track.release();
     }
 }

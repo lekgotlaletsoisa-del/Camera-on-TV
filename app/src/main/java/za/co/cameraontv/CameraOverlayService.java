@@ -57,7 +57,7 @@ public final class CameraOverlayService extends Service implements CameraApiServ
     private static volatile boolean running;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private final AlarmPlayer alarmPlayer = new AlarmPlayer(mainHandler);
+    private final AlarmPlayer alarmPlayer = new AlarmPlayer();
     private final AtomicLong commandGeneration = new AtomicLong();
     private WindowManager windowManager;
     private View overlayView;
