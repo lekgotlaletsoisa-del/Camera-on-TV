@@ -19,6 +19,7 @@ not unexpectedly replace the television's current audio.
 - Replaces the current stream atomically when a newer camera request arrives.
 - Optionally plays a rapid ambulance-style siren when a stream starts or takes over.
 - Provides persistent Follow API, Always on, and Always off sound policies on the TV.
+- Automatically enables a software-decoder compatibility mode on affected Amlogic MiBox hardware.
 - Removes the window immediately on stop, before releasing the media player.
 - Uses interleaved RTP-over-RTSP/TCP for reliable Frigate/go2rtc playback.
 - Runs as a foreground service and starts again after the TV boots.
@@ -32,7 +33,9 @@ not unexpectedly replace the television's current audio.
 3. Return to the app and note the API address displayed on screen, for example
    `http://192.168.1.50:8787`.
 4. Choose the **Alarm sound** policy. **Follow REST request** is the default.
-5. Leave the foreground service running. It restarts after TV boot and continues when the activity
+5. Review **MiBox compatibility decoder**. It is selected automatically on affected hardware and
+   can be overridden manually.
+6. Leave the foreground service running. It restarts after TV boot and continues when the activity
    is closed.
 
 The TV and API client must be reachable on the same network. The API has no authentication and must
@@ -110,6 +113,8 @@ Example response:
   "soundRequested": true,
   "soundEnabled": true,
   "soundMode": "follow_api",
+  "compatibilityDecoder": true,
+  "compatibilityDecoderRecommended": true,
   "url": "rtsp://camera.example/stream",
   "error": null
 }
@@ -252,6 +257,7 @@ Run all local verification tasks with:
 - `CameraApiServer` validates REST requests and passes commands to the service controller.
 - `AlarmPlayer` synthesizes the sweeping alert at runtime, so no external audio asset is needed.
 - `SoundSettings` persists and applies the user's REST-request override.
+- `DecoderSettings` persists the optional H.264 software-decoder workaround.
 - `BootReceiver` restores the foreground service after Android finishes booting.
 
 ## Operational notes
@@ -262,6 +268,12 @@ Run all local verification tasks with:
   underlying TV application.
 - An enabled alarm uses the television's media-audio path and current volume. Camera audio remains
   muted when the API request uses `"muted": true`.
+- **MiBox compatibility decoder** is automatically selected on Xiaomi MiBox-family devices with
+  Amlogic hardware, while other TVs retain their normal decoder selection. Users can override the
+  automatic choice. When enabled, it prefers Android's software H.264 decoder for the overlay and
+  leaves YouTube and other applications free to use the hardware decoder. This avoids known
+  decoder-reset conflicts at the cost of moderately higher CPU usage. Decoder fallback remains
+  enabled if software initialization is unavailable.
 - RTSP startup time still depends on camera responsiveness, codec initialization, and network
   latency. The player uses a deliberately short live buffer to reduce startup delay and forces
   interleaved RTP-over-RTSP/TCP for compatibility with Frigate/go2rtc streams.

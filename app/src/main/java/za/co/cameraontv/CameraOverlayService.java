@@ -21,11 +21,14 @@ import android.view.WindowManager;
 
 import androidx.annotation.OptIn;
 import androidx.media3.common.MediaItem;
+import androidx.media3.common.MimeTypes;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.DefaultLoadControl;
+import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.mediacodec.MediaCodecSelector;
 import androidx.media3.exoplayer.rtsp.RtspMediaSource;
 import androidx.media3.ui.PlayerView;
 
@@ -186,6 +189,9 @@ public final class CameraOverlayService extends Service implements CameraApiServ
             status.put("soundRequested", soundRequested);
             status.put("soundEnabled", soundEnabled);
             status.put("soundMode", SoundSettings.getMode(this).value());
+            status.put("compatibilityDecoder", DecoderSettings.isEnabled(this));
+            status.put("compatibilityDecoderRecommended",
+                    DecoderSettings.isAutomaticallyRecommended());
             status.put("url", currentUrl == null ? JSONObject.NULL : currentUrl);
             status.put("error", lastError == null ? JSONObject.NULL : lastError);
         } catch (JSONException ignored) {
@@ -235,7 +241,17 @@ public final class CameraOverlayService extends Service implements CameraApiServ
             DefaultLoadControl loadControl = new DefaultLoadControl.Builder()
                     .setBufferDurationsMs(250, 1500, 100, 250)
                     .build();
-            player = new ExoPlayer.Builder(this)
+            DefaultRenderersFactory renderersFactory = new DefaultRenderersFactory(this)
+                    .setEnableDecoderFallback(true);
+            if (DecoderSettings.isEnabled(this)) {
+                renderersFactory.setMediaCodecSelector((mimeType, secure, tunneling) -> {
+                    MediaCodecSelector selector = MimeTypes.VIDEO_H264.equals(mimeType)
+                            ? MediaCodecSelector.PREFER_SOFTWARE
+                            : MediaCodecSelector.DEFAULT;
+                    return selector.getDecoderInfos(mimeType, secure, tunneling);
+                });
+            }
+            player = new ExoPlayer.Builder(this, renderersFactory)
                     .setLoadControl(loadControl)
                     .build();
             player.setVolume(shouldMute ? 0f : 1f);

@@ -15,6 +15,10 @@
     <string name="sound_mode_always_on">Always play alarm</string>
     <string name="sound_mode_always_off">Never play alarm</string>
     <string name="sound_mode_saved">Alarm sound setting saved</string>
+    <string name="decoder_setting_label">Playback compatibility</string>
+    <string name="decoder_setting_description">Automatically enabled on affected Amlogic MiBox devices. Override it here if needed.</string>
+    <string name="compatibility_decoder">MiBox compatibility decoder</string>
+    <string name="decoder_setting_saved">Playback compatibility setting saved</string>
     <string name="api_usage">Start stream:\nPOST /stream with JSON {&quot;url&quot;:&quot;rtsp://camera/stream&quot;,&quot;sound&quot;:true}\n\nStop immediately:\nDELETE /stream\n\nCheck state:\nGET /status</string>
     <string name="stop_stream">Stop current stream</string>
     <string name="refresh_status">Refresh status</string>

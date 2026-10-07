@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,7 +30,9 @@ public final class MainActivity extends Activity {
     private TextView serviceStatus;
     private Button grantPermissionButton;
     private RadioGroup soundModeGroup;
+    private CheckBox compatibilityDecoder;
     private boolean refreshingSoundMode;
+    private boolean refreshingDecoderSetting;
 
     /** Creates the activity instance required by the Android component loader. */
     public MainActivity() {
@@ -50,11 +53,14 @@ public final class MainActivity extends Activity {
         serviceStatus = findViewById(R.id.service_status);
         grantPermissionButton = findViewById(R.id.grant_permission_button);
         soundModeGroup = findViewById(R.id.sound_mode_group);
+        compatibilityDecoder = findViewById(R.id.compatibility_decoder);
 
         grantPermissionButton.setOnClickListener(view -> requestOverlayPermission());
         findViewById(R.id.stop_stream_button).setOnClickListener(view -> stopCurrentStream());
         findViewById(R.id.refresh_status_button).setOnClickListener(view -> refreshStatus());
         soundModeGroup.setOnCheckedChangeListener((group, checkedId) -> saveSoundMode(checkedId));
+        compatibilityDecoder.setOnCheckedChangeListener(
+                (button, checked) -> saveDecoderSetting(checked));
 
         startApiService();
         refreshStatus();
@@ -109,6 +115,7 @@ public final class MainActivity extends Activity {
                 ? R.string.api_service_running
                 : R.string.api_service_starting);
         refreshSoundMode();
+        refreshDecoderSetting();
     }
 
     private void refreshSoundMode() {
@@ -144,6 +151,20 @@ public final class MainActivity extends Activity {
         }
         SoundSettings.setMode(this, mode);
         Toast.makeText(this, R.string.sound_mode_saved, Toast.LENGTH_SHORT).show();
+    }
+
+    private void refreshDecoderSetting() {
+        refreshingDecoderSetting = true;
+        compatibilityDecoder.setChecked(DecoderSettings.isEnabled(this));
+        refreshingDecoderSetting = false;
+    }
+
+    private void saveDecoderSetting(boolean enabled) {
+        if (refreshingDecoderSetting) {
+            return;
+        }
+        DecoderSettings.setEnabled(this, enabled);
+        Toast.makeText(this, R.string.decoder_setting_saved, Toast.LENGTH_SHORT).show();
     }
 
     private static String findLanIpv4Address() {
