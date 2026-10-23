@@ -12,7 +12,7 @@ import java.util.Map;
 import fi.iki.elonen.NanoHTTPD;
 
 /**
- * Small LAN-only HTTP API that translates REST requests into overlay controller operations.
+ * Small LAN-only HTTP API that translates REST requests into overlay and alarm operations.
  *
  * <p>The server intentionally has no Internet-facing features. Deploy it only on a trusted local
  * network, or isolate the TV and camera network with firewall rules.</p>
@@ -26,10 +26,19 @@ final class CameraApiServer extends NanoHTTPD {
          *
          * @param rtspUrl validated RTSP URL
          * @param muted whether camera audio should be muted
-         * @param soundRequested whether the request asks the app to play its alarm
          * @return acceptance state and a human-readable result message
          */
-        StartResult startStream(String rtspUrl, boolean muted, boolean soundRequested);
+        StartResult startStream(String rtspUrl, boolean muted);
+
+        /**
+         * Requests the short alarm without changing overlay playback.
+         *
+         * <p>Playback is asynchronous. The result describes the policy decision and does not
+         * confirm that audio reached the TV speakers.</p>
+         *
+         * @return {@code true} when the current alarm policy allows playback
+         */
+        boolean requestAlarm();
 
         /** Requests immediate removal of the current overlay. */
         void stopStream();
@@ -76,7 +85,7 @@ final class CameraApiServer extends NanoHTTPD {
     }
 
     /**
-     * Routes status, start, stop, root-discovery, and CORS preflight requests.
+     * Routes status, stream-start, independent alarm, stop, discovery, and CORS preflight requests.
      *
      * @param session NanoHTTPD request session
      * @return JSON response with permissive LAN CORS headers and caching disabled
@@ -96,7 +105,8 @@ final class CameraApiServer extends NanoHTTPD {
                 JSONObject body = new JSONObject();
                 body.put("name", "Camera on TV");
                 body.put("start", "POST /stream with JSON "
-                        + "{\"url\":\"rtsp://...\",\"muted\":true,\"sound\":false}");
+                        + "{\"url\":\"rtsp://...\",\"muted\":true}");
+                body.put("alarm", "POST /alarm");
                 body.put("stop", "DELETE /stream or POST /stop");
                 body.put("status", "GET /status");
                 return response(Response.Status.OK, body);
@@ -104,6 +114,15 @@ final class CameraApiServer extends NanoHTTPD {
             if ((Method.POST.equals(session.getMethod()) || Method.PUT.equals(session.getMethod()))
                     && "/stream".equals(path)) {
                 return startStream(session);
+            }
+            if (Method.POST.equals(session.getMethod()) && "/alarm".equals(path)) {
+                boolean played = controller.requestAlarm();
+                JSONObject body = message(played
+                        ? "Alarm requested"
+                        : "Alarm suppressed by the current sound policy");
+                body.put("accepted", true);
+                body.put("played", played);
+                return response(Response.Status.ACCEPTED, body);
             }
             if ((Method.DELETE.equals(session.getMethod()) && "/stream".equals(path))
                     || (Method.POST.equals(session.getMethod()) && "/stop".equals(path))) {
@@ -133,15 +152,12 @@ final class CameraApiServer extends NanoHTTPD {
             boolean muted = request.has("muted")
                     ? request.optBoolean("muted", true)
                     : parseBoolean(firstParameter(session, "muted"), true);
-            boolean soundRequested = request.has("sound")
-                    ? request.optBoolean("sound", false)
-                    : parseBoolean(firstParameter(session, "sound"), false);
             if (!isValidRtspUrl(url)) {
                 return response(Response.Status.BAD_REQUEST,
                         message("A valid rtsp:// URL is required"));
             }
 
-            StartResult result = controller.startStream(url, muted, soundRequested);
+            StartResult result = controller.startStream(url, muted);
             JSONObject body = message(result.message);
             body.put("accepted", result.accepted);
             return response(result.accepted ? Response.Status.ACCEPTED : Response.Status.CONFLICT, body);

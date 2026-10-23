@@ -41,10 +41,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import fi.iki.elonen.NanoHTTPD;
 
 /**
- * Persistent foreground service hosting both the REST API and top-right RTSP video overlay.
+ * Persistent foreground service hosting the REST API, independent alarm, and RTSP video overlay.
  *
  * <p>All window and player work is marshalled onto Android's main thread. API stop requests remove
  * the overlay window first and release playback second, minimizing visible stop latency.</p>
+ *
+ * <p>Explicit alarm requests use a separate audio worker and do not depend on overlay permission.
+ * Stream replacement and stop operations leave that alarm running; service destruction stops it.
+ * Sound status fields describe the most recent policy decision, not current audio output.</p>
  */
 public final class CameraOverlayService extends Service implements CameraApiServer.Controller {
 
@@ -126,28 +130,26 @@ public final class CameraOverlayService extends Service implements CameraApiServ
     }
 
     /**
-     * Queues playback after validating that Android permits overlay windows.
+     * Queues silent or policy-controlled playback after validating overlay permission.
      *
      * @param rtspUrl validated RTSP URL to play
      * @param shouldMute whether the stream audio should be muted
-     * @param shouldRequestSound whether the REST client requested the alarm
      * @return an accepted result, or a rejected result when overlay permission is missing
      */
     @Override
     public CameraApiServer.StartResult startStream(
             String rtspUrl,
-            boolean shouldMute,
-            boolean shouldRequestSound) {
+            boolean shouldMute) {
         if (!Settings.canDrawOverlays(this)) {
             return new CameraApiServer.StartResult(
                     false,
                     "Overlay permission is not granted. Open Camera on TV on the television first.");
         }
 
-        boolean shouldPlayAlarm = SoundSettings.shouldPlay(this, shouldRequestSound);
+        boolean shouldPlayAlarm = SoundSettings.shouldPlayOnStreamStart(this);
         currentUrl = rtspUrl;
         muted = shouldMute;
-        soundRequested = shouldRequestSound;
+        soundRequested = false;
         soundEnabled = shouldPlayAlarm;
         playbackState = "starting";
         lastError = null;
@@ -160,20 +162,44 @@ public final class CameraOverlayService extends Service implements CameraApiServ
         return new CameraApiServer.StartResult(true, "Stream start requested");
     }
 
-    /** Removes the video window immediately and then releases the player asynchronously. */
+    /**
+     * Plays the short alarm without starting, replacing, or stopping an overlay stream.
+     *
+     * <p>The alarm starts asynchronously when permitted. An accepted request does not confirm
+     * audible output, which also depends on the TV's volume and audio hardware.</p>
+     *
+     * @return {@code true} when the current sound policy allows the requested alarm
+     */
+    @Override
+    public boolean requestAlarm() {
+        boolean shouldPlayAlarm = SoundSettings.shouldPlayApiRequest(this);
+        soundRequested = true;
+        soundEnabled = shouldPlayAlarm;
+        if (shouldPlayAlarm) {
+            alarmPlayer.play();
+        }
+        return shouldPlayAlarm;
+    }
+
+    /**
+     * Queues removal of the video window and release of the player on the main thread.
+     *
+     * <p>The independent alarm and the last sound-policy decision remain unchanged.</p>
+     */
     @Override
     public void stopStream() {
         currentUrl = null;
         playbackState = "stopped";
         lastError = null;
-        soundRequested = false;
-        soundEnabled = false;
         commandGeneration.incrementAndGet();
         mainHandler.postAtFrontOfQueue(this::removeOverlayAndReleasePlayer);
     }
 
     /**
-     * Returns a point-in-time description of permission, API, and playback state.
+     * Returns the latest permission, API, playback, and alarm-policy state.
+     *
+     * <p>Sound fields record the most recent decision for a stream start or explicit alarm;
+     * they do not indicate whether the half-second alarm is still playing.</p>
      *
      * @return JSON status object suitable for the {@code GET /status} response
      */
@@ -209,6 +235,7 @@ public final class CameraOverlayService extends Service implements CameraApiServ
             apiServer = null;
         }
         removeOverlayAndReleasePlayer();
+        alarmPlayer.stop();
         super.onDestroy();
     }
 
@@ -327,7 +354,6 @@ public final class CameraOverlayService extends Service implements CameraApiServ
     }
 
     private void removeOverlayAndReleasePlayer() {
-        alarmPlayer.stop();
         if (overlayView != null) {
             try {
                 windowManager.removeViewImmediate(overlayView);

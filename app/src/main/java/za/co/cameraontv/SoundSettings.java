@@ -3,7 +3,7 @@ package za.co.cameraontv;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-/** Stores and resolves the user's persistent alarm-sound override. */
+/** Stores and resolves persistent policies for automatic and independently requested alarms. */
 final class SoundSettings {
 
     private static final String PREFERENCES_NAME = "camera_on_tv_settings";
@@ -12,10 +12,13 @@ final class SoundSettings {
     private SoundSettings() {
     }
 
-    /** Available policies for resolving the REST request's {@code sound} value. */
+    /** Available policies for automatic and API-requested alarms. */
     enum Mode {
+        /** Plays alarms only for explicit {@code POST /alarm} requests; the default policy. */
         FOLLOW_API("follow_api"),
+        /** Plays alarms for stream starts and explicit {@code POST /alarm} requests. */
         ALWAYS_ON("always_on"),
+        /** Suppresses both automatic and explicit alarms. */
         ALWAYS_OFF("always_off");
 
         private final String storedValue;
@@ -66,20 +69,22 @@ final class SoundSettings {
     }
 
     /**
-     * Resolves whether the alarm should play for a stream request.
+     * Resolves whether starting or replacing a stream should play the alarm automatically.
      *
      * @param context Android context used to read the current policy
-     * @param requested {@code sound} value supplied by the REST client
-     * @return effective alarm state after applying the user override
+     * @return {@code true} only when the user selected the always-on policy
      */
-    static boolean shouldPlay(Context context, boolean requested) {
-        Mode mode = getMode(context);
-        if (mode == Mode.ALWAYS_ON) {
-            return true;
-        }
-        if (mode == Mode.ALWAYS_OFF) {
-            return false;
-        }
-        return requested;
+    static boolean shouldPlayOnStreamStart(Context context) {
+        return getMode(context) == Mode.ALWAYS_ON;
+    }
+
+    /**
+     * Resolves whether an explicit {@code POST /alarm} request should play the alarm.
+     *
+     * @param context Android context used to read the current policy
+     * @return {@code false} only when the user selected the always-off policy
+     */
+    static boolean shouldPlayApiRequest(Context context) {
+        return getMode(context) != Mode.ALWAYS_OFF;
     }
 }

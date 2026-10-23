@@ -4,7 +4,7 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 
-/** Synthesizes and plays the ambulance-style alarm heard when a camera overlay starts. */
+/** Synthesizes and plays the short ambulance-style alarm used for camera alerts. */
 final class AlarmPlayer {
 
     private static final int SAMPLE_RATE_HZ = 48_000;

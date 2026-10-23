@@ -18,9 +18,9 @@
     <string name="api_address_label">API address</string>
     <string name="api_address_unavailable">Connect the TV to a network to see its API address.</string>
     <string name="sound_mode_label">Alarm sound</string>
-    <string name="sound_mode_description_short">Use each API request, or force one sound policy for every camera.</string>
-    <string name="sound_mode_follow_api">Follow REST request (default)</string>
-    <string name="sound_mode_always_on">Always play alarm</string>
+    <string name="sound_mode_description_short">Use a separate alarm request, alarm on every stream, or silence alerts.</string>
+    <string name="sound_mode_follow_api">Alarm only by API request (default)</string>
+    <string name="sound_mode_always_on">Alarm on every stream</string>
     <string name="sound_mode_always_off">Never play alarm</string>
     <string name="sound_mode_saved">Alarm sound setting saved</string>
     <string name="decoder_setting_label">Playback compatibility</string>
@@ -28,7 +28,7 @@
     <string name="compatibility_decoder">MiBox compatibility decoder</string>
     <string name="decoder_setting_saved">Playback compatibility setting saved</string>
     <string name="api_quick_reference">Quick API reference</string>
-    <string name="api_usage_compact"><b>POST</b> /stream   Start or replace\n<b>DELETE</b> /stream Stop immediately\n<b>GET</b> /status    Check current state</string>
+    <string name="api_usage_compact"><b>POST</b> /stream   Start or replace\n<b>POST</b> /alarm    Sound alert only\n<b>DELETE</b> /stream Stop immediately\n<b>GET</b> /status    Check current state</string>
     <string name="footer_hint">Use the remote to select. Changes save automatically.</string>
     <string name="help_button">How to use</string>
     <string name="help_title">How to use Camera on TV</string>
@@ -38,8 +38,8 @@
     <string name="help_step_one_body">The dashboard must show “Overlay permission granted.” Otherwise, select Grant overlay permission and allow display over other apps.</string>
     <string name="help_step_two_title">2  Use this TV address</string>
     <string name="help_step_three_title">3  Start or replace a camera</string>
-    <string name="help_start_example">POST /stream\n{\&quot;url\&quot;:\&quot;rtsp://camera/stream\&quot;,\&quot;muted\&quot;:true,\&quot;sound\&quot;:false}</string>
-    <string name="help_start_explanation">Send JSON to the address above. A new POST replaces the running camera. Sound defaults to off; the Alarm sound setting can override it.</string>
+    <string name="help_start_example">POST /stream\n{\&quot;url\&quot;:\&quot;rtsp://camera/stream\&quot;,\&quot;muted\&quot;:true}\n\nPOST /alarm\nPlays only the short alarm</string>
+    <string name="help_start_explanation">A stream request starts or replaces video. An alarm request is independent and works with or without an overlay.</string>
     <string name="help_step_four_title">4  Stop the camera immediately</string>
     <string name="help_stop_example">DELETE /stream</string>
     <string name="help_notes">GET /status reports the current state. Keep the TV and controller on the same network, and do not expose port 8787 to the Internet.</string>

@@ -3,6 +3,17 @@
 All notable user-facing changes to Camera on TV are recorded here. Version numbers correspond to
 the Android `versionName` in `app/build.gradle.kts`.
 
+## 1.5
+
+- Added `POST /alarm` for playing the short alert independently of overlay playback.
+- Changed API-request alarm mode so stream start and replacement requests remain silent.
+- Kept automatic stream-start alerts available through **Alarm on every stream** and retained the
+  global **Never play alarm** override.
+- Decoupled alarm lifetime from overlay replacement and stop operations.
+- Updated the on-TV guide and Home Assistant example for camera and zone occupancy triggers.
+- Documented migration from the legacy stream `sound` field, alarm status semantics, and update
+  verification while preserving saved TV preferences.
+
 ## 1.4
 
 - Shortened the camera alert sound to half a second.
